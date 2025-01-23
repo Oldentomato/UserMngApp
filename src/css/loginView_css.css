@@ -1,0 +1,21 @@
+.login{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: #eedfdf;
+}
+
+.container{
+    position: relative;
+    display: block;
+    width: 700px;
+    justify-content: center;
+    align-items: center;
+}
+
+.status{
+    position: absolute;
+    left: 40px;
+    top: 20px;
+}
