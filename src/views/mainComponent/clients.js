@@ -1,7 +1,7 @@
 import { Button, Flex, Table, Drawer, Form, Input, InputNumber, notification, Select } from 'antd';
 import { LockOutlined } from '@ant-design/icons';
 import {useState} from "react";
-import {addUser} from "../../components/userServer"
+import {addUser, deleteUser} from "../../components/userServer"
 
 const { Option } = Select;
 
@@ -46,7 +46,8 @@ const columns = [
 export default function ClientView({isOnline, userDatas, getUserInfo}){
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const [password, setPassword] = useState("");
-    const [loading, setLoading] = useState(false);
+    const [addloading, setAddLoading] = useState(false);
+    const [deleteloading, setDeleteLoading] = useState(false);
     const [open, setOpen] = useState(false);
 
     const [api, contextHolder] = notification.useNotification();
@@ -81,13 +82,27 @@ export default function ClientView({isOnline, userDatas, getUserInfo}){
 
   }
 
-  const onDelete = async() =>{
-
+  const onDelete = async(e) =>{
+    e.preventDefault();
+    setDeleteLoading(true);
+    deleteUser(selectedRowKeys).then((result)=>{
+      if(result){
+        openNotification({title:"성공",desc:"삭제에 성공했습니다"})
+      }
+      else{
+        openNotification({title:"실패",desc:"삭제에 실패했습니다"})
+      }
+    }).catch((err)=>{
+      openNotification({title:"실패",desc:"통신에 문제가 생겼습니다"})
+    }).finally(()=>{
+      getUserInfo();
+      setDeleteLoading(false);
+    })
   }
 
 
     const onFinish = async(values) => {
-      setLoading(true)
+      setAddLoading(true)
       const userData = {
         name: values.user.name,
         age: values.user.age,
@@ -95,6 +110,7 @@ export default function ClientView({isOnline, userDatas, getUserInfo}){
         address: values.address,
         phone: values.phone
       }
+      // notifi 를 위해 await로 변경해볼것
       addUser(userData).then((result)=>{
         if(result){
           openNotification({title:"성공",desc:"업로드에 성공했습니다"})
@@ -107,7 +123,7 @@ export default function ClientView({isOnline, userDatas, getUserInfo}){
       }).finally(()=>{
         getUserInfo();
         setOpen(false);
-        setLoading(false);
+        setAddLoading(false);
       })
       
       };
@@ -135,7 +151,7 @@ export default function ClientView({isOnline, userDatas, getUserInfo}){
             <Flex gap="middle" vertical>
                 <Flex align="center" gap="middle">
                     {hasSelected ? `Selected ${selectedRowKeys.length} items` : null}
-                    {(isOnline && hasSelected) && <Button danger onClick={onDelete}>Delete</Button>}
+                    {(isOnline && hasSelected) && (deleteloading ? <Button danger loading onClick={onDelete}>Delete</Button> : <Button danger onClick={onDelete}>Delete</Button>)}
                     {isOnline && 
                     <>
                       <Button type="primary" onClick={showDrawer}>Add</Button>
@@ -229,7 +245,7 @@ export default function ClientView({isOnline, userDatas, getUserInfo}){
               <Input />
             </Form.Item>
             <Form.Item label={null}>
-              {loading ?              
+              {addloading ?              
               <Button type="primary" loading htmlType="submit">
                 loading
               </Button>:

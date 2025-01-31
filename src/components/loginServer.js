@@ -30,8 +30,10 @@ const requestLogin = async(data) => {
 
 const requestLogout = async() => {
     const token = await getToken('token')
-    const result = await axios.post(FETCH_URL+"/api/admin/logout",{
-        token: token
+    const result = await axios.get(FETCH_URL+"/api/admin/logout",{
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
     }).catch((err)=>{
         console.log(err)
         return false;

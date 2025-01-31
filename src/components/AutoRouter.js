@@ -37,8 +37,10 @@ const Authorization = ({
 
     const fetchAndSetToken = async () => {
         const token = await getToken('token');
-        const result = await axios.post(FETCH_URL+"/api/admin/getAdmin", {
-            token: token
+        const result = await axios.get(FETCH_URL+"/api/admin/getAdmin", {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
         }).catch((err)=> {
             console.log(err)
         })

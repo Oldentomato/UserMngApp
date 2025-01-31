@@ -71,6 +71,22 @@ function createWindow() {
 
 }
 
+//mac
+// const getUsbDrives = () => {
+//   try {
+//       // `/Volumes` 디렉토리에서 마운트된 USB 드라이브 찾기
+//       const volumesOutput = execSync('ls /Volumes').toString();
+//       return volumesOutput
+//           .split('\n')
+//           .filter(name => name.trim()) // 빈 라인 제거
+//           .map(name => `/Volumes/${name}`); // 전체 경로로 변환
+//   } catch (error) {
+//       console.error('Error fetching USB drives:', error);
+//       return [];
+//   }
+// };
+
+//win
 const getUsbDrives = () => {
   try {
       // `wmic logicaldisk` 명령으로 드라이브 정보 가져오기
@@ -92,6 +108,8 @@ const getUsbDrives = () => {
 
 const findFileInUsb = (driveLetters, fileName) => {
     for (const drive of driveLetters) {
+      //mac: const drivePath = `${drive}/`; // 드라이브 경로
+      //win: const drivePath = `${drive}\\`; // 드라이브 경로
         const drivePath = `${drive}\\`; // 드라이브 경로
         try {
             const files = fs.readdirSync(drivePath); // 드라이브 내부 파일 읽기

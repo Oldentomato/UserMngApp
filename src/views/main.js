@@ -1,18 +1,68 @@
-import {useEffect, useState} from "react"
+import {useEffect, useState, useCallback} from "react"
 import "../css/mainView_css.css"
 import { CloseOutlined, UserOutlined, ProductOutlined, MailOutlined, ScheduleOutlined, LogoutOutlined } from "@ant-design/icons"
 import { useNavigate } from "react-router-dom";
 import DashBoard from "./mainComponent/dashboard"
 import ClientView from "./mainComponent/clients";
+import MessageView from "./mainComponent/message";
 import {requestLogout} from "../components/loginServer"
 import {getUsers} from "../components/userServer"
+import { getMsgList } from '../components/messageServer';
+import { getToken } from "../components/getToken";
+import {Modal, notification} from "antd";
+import { ExclamationCircleOutlined } from '@ant-design/icons';
 
 
 
 export default function MainView({isOnline, localData}){
     const navigate = useNavigate();
-    const [menuStatus, setMenuStatus] = useState("dashboard")
-    const [userList, setUserList] = useState([])
+    const [menuStatus, setMenuStatus] = useState("dashboard");
+    const [api, nofiContextHolder] = notification.useNotification();
+    const [userList, setUserList] = useState([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modal, contextHolder] = Modal.useModal();
+    const [msgList, setMsgList] = useState([]);
+
+    const openNotification = (data) => {
+        api.info({
+          message: data.title,
+          description:data.desc
+        });
+    };
+
+    const confirm = () => {
+      modal.warning({
+        title: '로그인시간 지남',
+        icon: <ExclamationCircleOutlined />,
+        content: '로그인 시간이 지나서 자동으로 로그아웃됩니다.',
+        okText: '확인',
+        onOk:()=>navigate("/")
+      });
+    };
+
+    const requestMsgs = async()=> {
+        if(isOnline){
+            const result = await getMsgList().catch((err)=>{
+                console.log(err)
+                return result
+            })
+            const arr = Object.entries(result.content.messageList); //object 형식에서 arr로 변경
+            const modifiedList = arr.map((item)=>({
+                key: item[0],
+                content: item[1]
+            }))
+            
+            if(result.success){
+                setMsgList(modifiedList)
+            }else{
+                openNotification({
+                    title: '실패',
+                    desc: result.msg
+                })
+            }
+        }
+
+    }
 
 
     const getUsersInfo = async() => {
@@ -21,19 +71,24 @@ export default function MainView({isOnline, localData}){
                 console.log(err)
                 return []
             })
-            const modifiedList = result.map((item) => ({
-                key: item.key,
-                name: item.name, 
-                age: item.age, 
-                gender: item.gender,
-                address: item.address,
-                phone: item.phone
+            const arr = Object.entries(result); //object 형식에서 arr로 변경
+            //item[0] = key, item[1] = value
+            const modifiedList = arr.map((item) => ({
+                key: item[0],
+                name: item[1].name, 
+                age: item[1].age, 
+                gender: item[1].gender,
+                address: item[1].address,
+                phone: item[1].phone
               }));
     
               setUserList(modifiedList);
         }else{
             if(localData === null){
-                console.log("usb 데이터 누락") //나중에 modal로 교체할것
+                openNotification({
+                    title: '실패',
+                    desc: 'usb 데이터 누락'
+                })
             }else{
                 setUserList(localData.userList)
             }
@@ -49,6 +104,9 @@ export default function MainView({isOnline, localData}){
         else if(menuStatus === "clients"){
             return <ClientView isOnline={isOnline} userDatas={userList} getUserInfo={() => getUsersInfo()} />
         }
+        else if(menuStatus === "messages"){
+            return <MessageView isOnline={isOnline} userDatas={userList} msgList={msgList} requestMsgs={() =>requestMsgs()} openNotification={openNotification} />
+        }
     }
 
     const onClientsClick = () =>{
@@ -57,6 +115,18 @@ export default function MainView({isOnline, localData}){
 
     const onDashboardClick = () =>{
         setMenuStatus("dashboard")
+    }
+
+    const onMessageClick = () => {
+        if(isOnline){
+            setMenuStatus("messages")
+        }else{
+            openNotification({
+                title: '실패',
+                desc: '온라인 환경만 이용가능'
+            })
+        }
+        
     }
 
 
@@ -85,14 +155,42 @@ export default function MainView({isOnline, localData}){
         }
     }
 
+    const checkCookie = async() => {
+        const result = await getToken("token")
+        if(result === ""){
+            setIsModalOpen(true)
+            confirm()
+        }
+    }
+
+    const IntervalFind = useCallback(() => { 
+        if(!isModalOpen){
+            checkCookie();
+        }
+        
+    }, [isModalOpen]); //useCallback의 종속성 배열에 isModalOpen을 추가해 최신 값을 참조하도록 합니다.
+
+    
+    useEffect(() => {
+        // 5초마다 fetchData를 호출하는 Interval 설정
+        const intervalId = setInterval(() => {
+            IntervalFind();
+        }, 10000);
+    
+        // 컴포넌트가 언마운트될 때 Interval 정리
+        return () => clearInterval(intervalId);
+    }, [IntervalFind]);
+
     useEffect(()=>{
         // getUsbData()
         getUsersInfo()
+        requestMsgs()
     },[])
 
     return (
         <div className="mainView">
-            
+            {contextHolder}
+            {nofiContextHolder}
             <div className="mainContainer">
                 <aside>
                     <div className="top">
@@ -117,7 +215,7 @@ export default function MainView({isOnline, localData}){
                                 <UserOutlined />
                             </span>
                         </button>
-                        <button className={menuStatus === "messages" ? "sidebarBtnActive" : "sidebarBtn" }>
+                        <button className={menuStatus === "messages" ? "sidebarBtnActive" : "sidebarBtn" } onClick={onMessageClick}>
                             <h3>Messages</h3>
                             <span>
                                 <MailOutlined />

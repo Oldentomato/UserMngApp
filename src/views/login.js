@@ -52,7 +52,7 @@ export default function LoginView(){
 
     const fetchData = async () => {
         try {
-          const response = await axios.get(FETCH_URL+'/healthcheck');
+          const response = await axios.get(FETCH_URL+'/api/healthcheck');
           if (response.data.success){
             setIsOnline(true);
           }else{
@@ -76,7 +76,7 @@ export default function LoginView(){
         fetchData();
       }, []);
     
-      useEffect(() => {
+    useEffect(() => {
         // 5초마다 fetchData를 호출하는 Interval 설정
         const intervalId = setInterval(() => {
             IntervalFind();
@@ -84,7 +84,7 @@ export default function LoginView(){
     
         // 컴포넌트가 언마운트될 때 Interval 정리
         return () => clearInterval(intervalId);
-      }, [IntervalFind]);
+    }, [IntervalFind]);
 
     return(
         <div className="login">
