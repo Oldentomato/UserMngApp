@@ -27,10 +27,10 @@ const addUser = async(data) => {
         {
             userInfo: {
                 name: data.name,
-                age: data.age,
-                gender: data.gender,
+                family: data.family,
                 address: data.address,
-                phone: data.phone
+                phone: data.phone,
+                etc: data.etc
             }
         },
         {

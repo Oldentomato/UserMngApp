@@ -67,4 +67,29 @@ const deleteMsg = async(data) =>{
     }
 }
 
-export {getMsgList, addMsg, deleteMsg}
+const sendMsg = async(data) => {
+    const token = await getToken("token")
+    const result = await axios.post(FETCH_URL+'/api/message/sendMsg', 
+    {
+        userList: data.userList,
+        msgContent: data.msgContent
+    },
+    {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    }
+    ).catch(error => {
+        console.error(error); // 에러 처리
+        return {success: false, msg: error}
+    });
+
+    if(result.data.success){
+        return {success: true};
+
+    }else{
+        return {success: false, msg: "네트워크 에러"}
+    }
+}
+
+export {getMsgList, addMsg, deleteMsg, sendMsg}

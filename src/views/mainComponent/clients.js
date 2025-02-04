@@ -1,56 +1,101 @@
-import { Button, Flex, Table, Drawer, Form, Input, InputNumber, notification, Select } from 'antd';
+import { Button, Flex, Table, Input, notification, Popover, List } from 'antd';
 import { LockOutlined } from '@ant-design/icons';
 import {useState} from "react";
-import {addUser, deleteUser} from "../../components/userServer"
+import {deleteUser} from "../../components/userServer"
+import AddUserForm from '../../components/AddUser';
 
-const { Option } = Select;
-
-const columns = [
-    {
-      title: '이름',
-      dataIndex: 'name',
-    },
-    {
-      title: '나이',
-      dataIndex: 'age',
-    },
-    {
-      title: '주소',
-      dataIndex: 'address',
-    },
-  ];
-
-
-
-  const layout = {
-    labelCol: {
-      span: 8,
-    },
-    wrapperCol: {
-      span: 16,
-    },
-  };
-  const validateMessages = {
-    required: '${label} is required!',
-    types: {
-      email: '${label} is not a valid email!',
-      number: '${label} is not a valid number!',
-    },
-    number: {
-      range: '${label} must be between ${min} and ${max}',
-    },
-};
-
-
+const { Search } = Input;
 
 export default function ClientView({isOnline, userDatas, getUserInfo}){
-    const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-    const [password, setPassword] = useState("");
-    const [addloading, setAddLoading] = useState(false);
-    const [deleteloading, setDeleteLoading] = useState(false);
-    const [open, setOpen] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [userList, setUserList] = useState(userDatas);
+  const [searchString, setSearchString] = useState("");
+  const [password, setPassword] = useState("");
+  const [deleteloading, setDeleteLoading] = useState(false);
+  const [open, setOpen] = useState(false);
 
-    const [api, contextHolder] = notification.useNotification();
+  const [api, contextHolder] = notification.useNotification();
+
+
+    const columns = [
+      {
+        title: '이름',
+        dataIndex: 'name',
+      },
+      {
+        title: '가족',
+        dataIndex: 'family',
+        render: (_, record) => {
+          return (
+            <>
+            {
+              record.family.length >= 1 ? 
+              <List
+              bordered
+              dataSource={record.family}
+              renderItem={(item, index) => (
+                  <List.Item>
+                      <p>{item.relation}</p>
+                      <p>{item.name}</p>
+                  </List.Item>
+              )}
+              /> : 
+              <> </>
+            }
+
+            </>
+          );
+        },
+      },
+      {
+        title: '주소',
+        dataIndex: 'address',
+      },
+      {
+        title: '전화번호',
+        dataIndex: 'phone',
+      },
+      {
+        title: '중요사항',
+        dataIndex: 'etc',
+        render: (_, record) => {
+          return (
+            <>
+              <Popover content={
+                <div style={{
+                  width: "500px", /* 원하는 너비 */
+                  wordBreak: "break-all", //width가 넘어가면 자동으로 줄넘김되는 옵션
+                  maxHeight: "200px",
+                  fontSize: "20px",
+                  whiteSpace: "pre-line", // \n이 적용되도록 하는 옵션
+                  overflowY: "auto"}}>
+                  <p>{record.etc}</p>
+                </div>
+                } title="중요사항" trigger="click">
+                <Button>자세히보기</Button>
+              </Popover>
+            </>
+          );
+        },
+      },
+  ];
+
+  const filterUser = () => {
+    const filteredData = userList.filter(item => item.name === searchString);
+    setUserList(filteredData); // 새로운 배열로 치환
+  };
+
+
+  const searchOnChange = (e) =>{
+    setSearchString(e.target.value)
+  }
+
+  const searchReset = () =>{
+    setSearchString("")
+    setUserList(userDatas)
+  }
+
+
 
   const openNotification = (data) => {
       api.info({
@@ -101,34 +146,6 @@ export default function ClientView({isOnline, userDatas, getUserInfo}){
   }
 
 
-    const onFinish = async(values) => {
-      setAddLoading(true)
-      const userData = {
-        name: values.user.name,
-        age: values.user.age,
-        gender: values.gender,
-        address: values.address,
-        phone: values.phone
-      }
-      // notifi 를 위해 await로 변경해볼것
-      addUser(userData).then((result)=>{
-        if(result){
-          openNotification({title:"성공",desc:"업로드에 성공했습니다"})
-        }
-        else{
-          openNotification({title:"실패",desc:"업로드에 실패했습니다"})
-        }
-      }).catch((err)=>{
-        openNotification({title:"실패",desc:"통신에 문제가 생겼습니다"})
-      }).finally(()=>{
-        getUserInfo();
-        setOpen(false);
-        setAddLoading(false);
-      })
-      
-      };
-
-
 
 
     const onSelectChange = (newSelectedRowKeys) => {
@@ -160,103 +177,15 @@ export default function ClientView({isOnline, userDatas, getUserInfo}){
                     </>}
                     
                 </Flex>
-                <Table rowSelection={rowSelection} columns={columns} dataSource={userDatas} />
+                <Flex align="center" gap="middle">
+                <h3 style={{width:"10%"}}>고객 검색</h3><Search placeholder="고객명" value={searchString} onSearch={filterUser} onChange={searchOnChange} /><Button onClick={searchReset}>Reset</Button>
+                </Flex>
+                
+                <Table pagination={{pageSize: 6}} rowSelection={rowSelection} columns={columns} dataSource={userList} />
             </Flex>
-
-            <Drawer
-                title="고객 정보 추가"
-                width={720}
-                onClose={onClose}
-                open={open}
-                styles={{
-                body: {
-                    paddingBottom: 80,
-                },
-                }}
-                >
-            <Form
-            {...layout}
-            name="nest-messages"
-            onFinish={onFinish}
-            style={{
-              maxWidth: 600,
-            }}
-            validateMessages={validateMessages}
-          >
-            <Form.Item
-              name={['user', 'name']}
-              label="Name"
-              rules={[
-                {
-                  required: true,
-                },
-              ]}
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item
-              name={['user', 'age']}
-              label="Age"
-              rules={[
-                {
-                  type: 'number',
-                  min: 0,
-                  max: 99,
-                },
-              ]}
-            >
-              <InputNumber />
-            </Form.Item>
             
-            <Form.Item
-            name="phone"
-            label="Phone Number"
-            rules={[
-                {
-                required: true,
-                message: 'Please input your phone number!',
-                },
-            ]}
-            >
-            <Input
-                style={{
-                width: '100%',
-                }}
-            />
-            </Form.Item>
+            <AddUserForm onClose={onClose} open={open} setOpen={setOpen} openNotification={openNotification} getUserInfo={() => getUserInfo()}/>
 
-            <Form.Item
-                name="gender"
-                label="Gender"
-                rules={[
-                {
-                    required: true,
-                    message: 'Please select gender!',
-                },
-                ]}
-            >
-                <Select placeholder="select your gender">
-                <Option value="male">남성</Option>
-                <Option value="female">여성</Option>
-                </Select>
-            </Form.Item>
-
-            <Form.Item name='address' label="address">
-              <Input />
-            </Form.Item>
-            <Form.Item label={null}>
-              {addloading ?              
-              <Button type="primary" loading htmlType="submit">
-                loading
-              </Button>:
-                <Button type="primary" htmlType="submit">
-                  Submit
-              </Button>}
-
-            </Form.Item>
-          </Form>
-
-                </Drawer>
             </div>
         </div>
 

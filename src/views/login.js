@@ -8,8 +8,8 @@ import { useNavigate } from "react-router-dom";
 
 
 export default function LoginView(){
-    const [isLoading, setIsLoading] = useState(false);
     const [isOnline, setIsOnline] = useState(false);
+    const [loginLoading, setLoginLoading] = useState(false);
     const [usbPath, setUsbPath] = useState("");
     const [localPass, setLocalPass] = useState("");
     const navigate = useNavigate();
@@ -17,15 +17,15 @@ export default function LoginView(){
     const FETCH_URL = process.env.REACT_APP_SERVER_URL
 
 
-
     const onFinish = async(values) => {
+        setLoginLoading(true)
         requestLogin(values).then((result)=>{
             if(result === true){
                 navigate("/main", { state: { isOnline: true, localPass: "" } })
             }else{
                 console.log("error")
             }
-            
+            setLoginLoading(false)
         })
     };
 
@@ -96,7 +96,7 @@ export default function LoginView(){
             </div>
 
             <div className="container">
-                <h2>Login</h2>
+                <h2 style={{marginBottom: "10px"}}>Login</h2>
                 <Form
                     name="login"
                     initialValues={{
@@ -129,19 +129,25 @@ export default function LoginView(){
                 >
                     <Input prefix={<LockOutlined />} type="password" placeholder="Password" />
                 </Form.Item>
-                <Form.Item>
+                {/* <Form.Item>
                     <Flex justify="space-between" align="center">
                     <Form.Item name="remember" valuePropName="checked" noStyle>
                         <Checkbox>Remember me</Checkbox>
                     </Form.Item>
                     </Flex>
-                </Form.Item>
+                </Form.Item> */}
 
                 <Form.Item>
                     {isOnline?
+                    (
+                        loginLoading ? <Button loading block type="primary" htmlType="submit">
+                            Log in
+                        </Button> : 
                         <Button block type="primary" htmlType="submit">
                             Log in
-                        </Button>:
+                        </Button>
+                    )
+                        :
                         <Button block type="primary" disabled>
                             Offline
                         </Button>
@@ -152,10 +158,10 @@ export default function LoginView(){
             </div>
 
             <div>
-                <h2>
+                <h2 style={{marginBottom: "10px"}}>
                     Login to USB Local Data
                 </h2>
-                <Input prefix={<LockOutlined />} onChange={localPassChange} type="password" placeholder="Password" />
+                <Input style={{marginBottom: "10px"}} prefix={<LockOutlined />} onChange={localPassChange} type="password" placeholder="Password" />
                 {usbPath === ""?
                     <Button type="primary" loading iconPosition="end">
                         Loading

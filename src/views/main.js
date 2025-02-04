@@ -1,6 +1,6 @@
 import {useEffect, useState, useCallback} from "react"
 import "../css/mainView_css.css"
-import { CloseOutlined, UserOutlined, ProductOutlined, MailOutlined, ScheduleOutlined, LogoutOutlined } from "@ant-design/icons"
+import { CloseOutlined, UserOutlined, ProductOutlined, MailOutlined, ScheduleOutlined, LogoutOutlined, ExclamationCircleOutlined, LoadingOutlined } from "@ant-design/icons"
 import { useNavigate } from "react-router-dom";
 import DashBoard from "./mainComponent/dashboard"
 import ClientView from "./mainComponent/clients";
@@ -9,17 +9,18 @@ import {requestLogout} from "../components/loginServer"
 import {getUsers} from "../components/userServer"
 import { getMsgList } from '../components/messageServer';
 import { getToken } from "../components/getToken";
-import {Modal, notification} from "antd";
-import { ExclamationCircleOutlined } from '@ant-design/icons';
+import {Modal, notification, Spin, Flex } from "antd";
 
 
 
 export default function MainView({isOnline, localData}){
     const navigate = useNavigate();
-    const [menuStatus, setMenuStatus] = useState("dashboard");
+    const [menuStatus, setMenuStatus] = useState("clients");
     const [api, nofiContextHolder] = notification.useNotification();
     const [userList, setUserList] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [dataLoad, setDataLoad] = useState(false);
+    const [logoutLoading, setLogoutLoading] = useState(false);
     const [modal, contextHolder] = Modal.useModal();
     const [msgList, setMsgList] = useState([]);
 
@@ -76,10 +77,10 @@ export default function MainView({isOnline, localData}){
             const modifiedList = arr.map((item) => ({
                 key: item[0],
                 name: item[1].name, 
-                age: item[1].age, 
-                gender: item[1].gender,
+                family: item[1].family, 
                 address: item[1].address,
-                phone: item[1].phone
+                phone: item[1].phone,
+                etc:item[1].etc
               }));
     
               setUserList(modifiedList);
@@ -114,7 +115,7 @@ export default function MainView({isOnline, localData}){
     }
 
     const onDashboardClick = () =>{
-        setMenuStatus("dashboard")
+        // setMenuStatus("dashboard") //나중에 기능구현하면 주석해제할것
     }
 
     const onMessageClick = () => {
@@ -130,8 +131,9 @@ export default function MainView({isOnline, localData}){
     }
 
 
-    const onLogout = async(event) =>{
-        if(isOnline){
+    const onLogout = async() =>{
+        if(isOnline && !logoutLoading){
+            setLogoutLoading(true)
             const fetchAndLogout = async () => {
                 const result = await window.electronAPI.deleteCookieByName('token');
                 return result;
@@ -170,28 +172,38 @@ export default function MainView({isOnline, localData}){
         
     }, [isModalOpen]); //useCallback의 종속성 배열에 isModalOpen을 추가해 최신 값을 참조하도록 합니다.
 
-    
+
     useEffect(() => {
-        // 5초마다 fetchData를 호출하는 Interval 설정
-        const intervalId = setInterval(() => {
-            IntervalFind();
-        }, 10000);
-    
-        // 컴포넌트가 언마운트될 때 Interval 정리
-        return () => clearInterval(intervalId);
+        if(isOnline){
+            // 5초마다 fetchData를 호출하는 Interval 설정
+            const intervalId = setInterval(() => {
+                IntervalFind();
+            }, 10000);
+        
+            // 컴포넌트가 언마운트될 때 Interval 정리
+            return () => clearInterval(intervalId);
+        }
+
     }, [IntervalFind]);
 
-    useEffect(()=>{
-        // getUsbData()
-        getUsersInfo()
-        requestMsgs()
-    },[])
+    useEffect(() => {
+        const fetchData = async () => {
+            await getUsersInfo();
+            await requestMsgs();
+            setDataLoad(true);
+        };
+
+        fetchData();
+    }, []);
 
     return (
-        <div className="mainView">
-            {contextHolder}
-            {nofiContextHolder}
-            <div className="mainContainer">
+        <>
+            {
+                dataLoad ? 
+                <div className="mainView">
+                {contextHolder}
+                {nofiContextHolder}
+                <div className="mainContainer">
                 <aside>
                     <div className="top">
                         <div className="logo">  
@@ -201,7 +213,7 @@ export default function MainView({isOnline, localData}){
                             <CloseOutlined />
                         </div>
                     </div>
-
+    
                     <div className="sidebar">
                         <button className= {menuStatus === "dashboard" ? "sidebarBtnActive" : "sidebarBtn" } onClick={onDashboardClick}>
                             <h3>Dashboard</h3>
@@ -221,12 +233,12 @@ export default function MainView({isOnline, localData}){
                                 <MailOutlined />
                             </span>
                         </button>
-                        <button className={menuStatus === "schedule" ? "sidebarBtnActive" : "sidebarBtn" }>
+                        {/* <button className={menuStatus === "schedule" ? "sidebarBtnActive" : "sidebarBtn" }>
                             <h3>Schedule</h3>
                             <span>
                                 <ScheduleOutlined />
                             </span>
-                        </button>
+                        </button> */}
                         <button className="sidebarBtn" onClick={onLogout}>
                             <h3>logout</h3>
                             <span>
@@ -236,12 +248,25 @@ export default function MainView({isOnline, localData}){
                     </div>
                 </aside>
                 <ReturnPage />
-
-
+    
             </div>
-            {/* <button onClick={getUsbData}>get</button>
-            <button onClick={setUsbData}>set</button> */}
-        </div>
+            </div> 
+            : 
+            <Flex style={{justifyContent: "center", alignItems: "center"}}>
+                <Spin
+                    indicator={
+                        <LoadingOutlined
+                        style={{
+                            fontSize: 68,
+                        }}
+                        spin
+                        />
+                    }
+                />
+            </Flex>
+            }
+        </>
+
 
     )
 }

@@ -10,13 +10,18 @@ let win;
 const schema = `
 syntax = "proto3";
 
+message Family {
+    string relation = 1;
+    string name = 2;
+}
+
 message User {
     string key = 1;
     string name = 2;
-    int32 age = 3; 
-    string gender = 4; 
-    string address = 5; 
-    string phone = 6; 
+    string address = 3; 
+    repeated Family family = 4; 
+    string phone = 5; 
+    string etc = 6; 
 }
 
 message Data { 
@@ -41,6 +46,7 @@ function createWindow() {
             nodeIntegration: true, // Node.js 사용 허용
             enableRemoteModule: true,
             contextIsolation: true, // 필수 옵션
+            title: "유저관리도구",
             preload: path.join(__dirname, '/../build/preload.js')
         },
     });
@@ -67,7 +73,7 @@ function createWindow() {
 
         
     // 개발자 도구 열기
-    win.webContents.openDevTools();
+    // win.webContents.openDevTools();
 
 }
 

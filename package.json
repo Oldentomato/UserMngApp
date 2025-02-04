@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "main": "public/Main.js",
+  "homepage": "./",
   "dependencies": {
     "@ant-design/icons": "^5.5.2",
     "antd": "^5.23.1",
